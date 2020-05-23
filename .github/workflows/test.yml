@@ -1,9 +1,42 @@
 on: push
 name: Tests
 jobs:
-  macos:
-    name: Test macOS
+  macos-without-imagemagick-installed:
+    name: macOS without ImageMagick installed
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cargo test -vv
+        with:
+          submodules: true
+      - run: brew install pkg-config
+      - run: _TEST_EXPECT_BUILD_FROM_SOURCE=1 cargo test -vv
+  macos-with-imagemagick-installed:
+    name: macOS link to existing ImageMagick
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: brew install pkg-config
+      - run: brew install imagemagick
+      - run: _TEST_EXPECT_USE_EXISTING_INSTALLATION=1 cargo test -vv
+  macos-with-imagemagick-installed-force-static-env:
+    name: macOS force static ImageMagick w/ ENV
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: brew install pkg-config
+      - run: brew install imagemagick
+      - run: _TEST_EXPECT_BUILD_FROM_SOURCE=1 IMAGEMAGICK_SYS_STATIC=1 cargo test -vv
+  macos-with-imagemagick-installed-force-static-feature:
+    name: macOS force static ImageMagick w/ --features
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: brew install pkg-config
+      - run: brew install imagemagick
+      - run: _TEST_EXPECT_BUILD_FROM_SOURCE=1 cargo test -vv --features static

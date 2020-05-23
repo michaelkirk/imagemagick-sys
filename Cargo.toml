@@ -3,7 +3,17 @@ name = "imagemagick-sys"
 version = "0.1.0"
 authors = ["Michael Kirk <michael.code@endoftheworl.de>"]
 edition = "2018"
+links = "imagemagick"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
+[dev-dependencies]
+libc = "0.2"
+
+[build-dependencies]
+pkg-config = "0.3"
+
+[features]
+# Enable this feature if you want image magick to be statically linked
+# regardless of it being installed elsewhere on the system.
+static = []
