@@ -1,6 +1,7 @@
 on: push
 name: Tests
 jobs:
+  # macOS
   macos-without-imagemagick-installed:
     name: macOS without ImageMagick installed
     runs-on: macos-latest
@@ -40,3 +41,13 @@ jobs:
       - run: brew install pkg-config
       - run: brew install imagemagick
       - run: _TEST_EXPECT_BUILD_FROM_SOURCE=1 cargo test -vv --features static
+  # Ubuntu
+  ubuntu-with-old-imagemagick-installed:
+    name: ubuntu existing incompatible version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: sudo apt-get install -y imagemagick-6.q16
+      - run: _TEST_EXPECT_BUILD_FROM_SOURCE=1 cargo test -vv
