@@ -1,0 +1,9 @@
+on: push
+name: Tests
+jobs:
+  macos:
+    name: Test macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: cargo test -vv
