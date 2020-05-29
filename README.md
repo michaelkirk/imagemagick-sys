@@ -1,7 +1,7 @@
 # imagemagick-sys
 
-🚨🚨__This is a work in progress and at this point should not be considered
-safe or reliable. Currently only building for macOS. __🚨🚨
+🚨🚨 __This is a work in progress and at this point should not be considered
+safe or reliable. Currently only building for macOS.__ 🚨🚨
 
 Rust crate for linking to the [ImageMagick 7](https://imagemagick.org/index.php) library.
 
