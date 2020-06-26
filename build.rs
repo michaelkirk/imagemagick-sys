@@ -224,13 +224,8 @@ fn build_from_source() -> Result<(), Error> {
             .arg("--disable-opencl")
             .arg("--disable-shared")
             .arg("--enable-static")
-            .arg("--with-freetype=yes")
-            .arg("--with-modules")
-            .arg("--with-openjp2")
-            .arg("--with-openexr")
-            .arg("--with-webp=yes")
+            .arg("--without-webp")
             .arg("--with-heic=no")
-            .arg("--with-gslib")
             .arg("--without-fftw")
             .arg("--without-pango")
             .arg("--without-x")
@@ -252,6 +247,30 @@ fn build_from_source() -> Result<(), Error> {
             }
             Err(e) => {
                 eprintln!("`configure` command execution failed: {:?}", e);
+                exit(1)
+            }
+        }
+
+        // artifacts remain in the src dir, which is problematic on a shared 
+        // filesystem (e.g. in a docker mount)
+        eprintln!("running `make clean`...");
+        let mut clean_cmd = Command::new("make");
+        clean_cmd
+            .current_dir(Path::new("imagemagick-src"))
+            .arg("clean");
+        match clean_cmd.output() {
+            Ok(out) => {
+                if !out.status.success() {
+                    eprintln!(
+                        "`make clean` failed:\nstdout:\n{}\nstderr:\n{}",
+                        String::from_utf8(out.stdout).unwrap(),
+                        String::from_utf8(out.stderr).unwrap()
+                    );
+                    exit(1)
+                }
+            }
+            Err(e) => {
+                eprintln!("`make clean` command execution failed: {:?}", e);
                 exit(1)
             }
         }
@@ -301,12 +320,30 @@ fn build_from_source() -> Result<(), Error> {
     // resilient to point pkg_config at the just-compiled lib and query the pkg_config metadata for
     // the lib names directly.
 
+    if cfg!(target_os = "linux") {
+      // HACK: There is a cyclic dependency between Wand and Core. The order output by pkg-config
+      // fails on linux (works on macos, whose `ld` is apparently more forgiving)
+      //
+      // fails: `-lMagickCore, -lMagickWand`
+      // succeeds: `-lMagickWand, -lMagickCore`
+      //
+      // On the command line, we could specify redundantly (-lMagickCore  -lMagickWand -lMagickCore)
+      // but cargo dedupes link requests. And doesn't expose a way to do something like
+      // --start-group/--end-group
+      //
+      // So we have this terrible hack on linux to enforce the order, and then still get pkg_config 
+      // metadata to pick up any dependencies.
+      println!("cargo:rustc-link-lib=static=MagickWand-7.Q16HDRI");
+      println!("cargo:rustc-link-lib=static=MagickCore-7.Q16HDRI");
+    }
+
     let previous_value = env::var("PKG_CONFIG_PATH");
     env::set_var("PKG_CONFIG_PATH", format!("{}/lib/pkgconfig", &out_dir));
     let config = pkg_config::Config::new()
         .cargo_metadata(true)
         .statik(true)
         .probe("MagickWand")?;
+
     // restore env
     if let Ok(previous_value) = previous_value {
         env::set_var("PKG_CONFIG_PATH", previous_value);
